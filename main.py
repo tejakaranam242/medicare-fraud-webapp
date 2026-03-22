@@ -50,60 +50,70 @@ def get_db_connection():
     conn.row_factory = sqlite3.Row
     return conn
 
-try:
-    rf_model = joblib.load(MODEL_PATHS['rf'])
-    dt_model = joblib.load(MODEL_PATHS['dt'])
-    xgb_model = joblib.load(MODEL_PATHS['xgb'])
-    xgb_hybrid = joblib.load(MODEL_PATHS['hybrid'])
-    scaler = joblib.load(MODEL_PATHS['scaler'])
-    
-    with open(MODEL_PATHS['features'], "rb") as f:
-        feature_columns = pickle.load(f)
-    feature_columns = [c for c in feature_columns if c != "Fraud"]
+MODELS_LOADED = False
+rf_model = dt_model = xgb_model = xgb_hybrid = scaler = feature_columns = hybrid_feature_columns = None
+hospital_encoder = insurance_encoder = diagnosis_encoder = procedure_encoder = day_encoder = None
+proc_freq_map = diag_freq_map = avg_claim_diag_map = pipeline_metrics = None
+cnn_model = transformer_model = autoencoder_model = cnn_extractor = transformer_extractor = None
+gnn_model = None
 
-    with open(MODEL_PATHS['hybrid_features'], "rb") as f:
-        hybrid_feature_columns = pickle.load(f)
-
-    # Load categorical encoders and frequency maps
-    hospital_encoder = joblib.load("saved_models/Hospital_Type_encoder.pkl")
-    insurance_encoder = joblib.load("saved_models/Insurance_Type_encoder.pkl")
-    diagnosis_encoder = joblib.load("saved_models/Diagnosis_Code_encoder.pkl")
-    procedure_encoder = joblib.load("saved_models/Procedure_Code_encoder.pkl")
-    day_encoder = joblib.load("saved_models/Claim_Day_encoder.pkl")
-    
-    proc_freq_map = joblib.load("saved_models/proc_freq_map.pkl")
-    diag_freq_map = joblib.load("saved_models/diag_freq_map.pkl")
-    avg_claim_diag_map = joblib.load("saved_models/avg_claim_diag_map.pkl")
-
+def load_models_lazily():
+    global MODELS_LOADED, rf_model, dt_model, xgb_model, xgb_hybrid, scaler, feature_columns, hybrid_feature_columns
+    global hospital_encoder, insurance_encoder, diagnosis_encoder, procedure_encoder, day_encoder
+    global proc_freq_map, diag_freq_map, avg_claim_diag_map, pipeline_metrics
+    global cnn_model, transformer_model, autoencoder_model, cnn_extractor, transformer_extractor, gnn_model
+    if MODELS_LOADED: return
     try:
-        pipeline_metrics = joblib.load("saved_models/pipeline_metrics.pkl")
-    except:
-        pipeline_metrics = {"accuracy": 94.2, "precision": 92.5, "recall": 91.8, "f1": 92.1} # Fallback
+        rf_model = joblib.load(MODEL_PATHS['rf'])
+        dt_model = joblib.load(MODEL_PATHS['dt'])
+        xgb_model = joblib.load(MODEL_PATHS['xgb'])
+        xgb_hybrid = joblib.load(MODEL_PATHS['hybrid'])
+        scaler = joblib.load(MODEL_PATHS['scaler'])
+        
+        with open(MODEL_PATHS['features'], "rb") as f:
+            feature_columns = pickle.load(f)
+        feature_columns = [c for c in feature_columns if c != "Fraud"]
 
-    # Load Deep Models & Extractors
-    cnn_model = tf.keras.models.load_model(MODEL_PATHS['cnn'], compile=False)
-    transformer_model = tf.keras.models.load_model(MODEL_PATHS['transformer'], compile=False)
-    autoencoder_model = tf.keras.models.load_model(MODEL_PATHS['autoencoder'], compile=False)
+        with open(MODEL_PATHS['hybrid_features'], "rb") as f:
+            hybrid_feature_columns = pickle.load(f)
 
-    cnn_extractor = tf.keras.Model(inputs=cnn_model.input, outputs=cnn_model.layers[-2].output)
-    transformer_extractor = tf.keras.Model(inputs=transformer_model.input, outputs=transformer_model.layers[-2].output)
-    
-    # Load GNN
-    gnn_model = GraphSAGE(len(feature_columns), 64, 2)
-    try:
-        gnn_model.load_state_dict(torch.load("saved_models/gnn.pt", map_location=torch.device('cpu')))
-        gnn_model.eval()
-    except Exception as ge:
-        print(f"GNN load error: {ge}")
-        gnn_model = None
-    
-except Exception as e:
-    print(f"❌ Error loading models: {e}")
-    traceback.print_exc()
-    xgb_model, rf_model, cnn_model, transformer_model, autoencoder_model, xgb_hybrid = None, None, None, None, None, None
-    hybrid_feature_columns = None
-    hospital_encoder, insurance_encoder, diagnosis_encoder = None, None, None
-    proc_freq_map, diag_freq_map, avg_claim_diag_map = {}, {}, {}
+        hospital_encoder = joblib.load("saved_models/Hospital_Type_encoder.pkl")
+        insurance_encoder = joblib.load("saved_models/Insurance_Type_encoder.pkl")
+        diagnosis_encoder = joblib.load("saved_models/Diagnosis_Code_encoder.pkl")
+        procedure_encoder = joblib.load("saved_models/Procedure_Code_encoder.pkl")
+        day_encoder = joblib.load("saved_models/Claim_Day_encoder.pkl")
+        
+        proc_freq_map = joblib.load("saved_models/proc_freq_map.pkl")
+        diag_freq_map = joblib.load("saved_models/diag_freq_map.pkl")
+        avg_claim_diag_map = joblib.load("saved_models/avg_claim_diag_map.pkl")
+
+        try:
+            pipeline_metrics = joblib.load("saved_models/pipeline_metrics.pkl")
+        except:
+            pipeline_metrics = {"accuracy": 94.2, "precision": 92.5, "recall": 91.8, "f1": 92.1} # Fallback
+
+        cnn_model = tf.keras.models.load_model(MODEL_PATHS['cnn'], compile=False)
+        transformer_model = tf.keras.models.load_model(MODEL_PATHS['transformer'], compile=False)
+        autoencoder_model = tf.keras.models.load_model(MODEL_PATHS['autoencoder'], compile=False)
+
+        cnn_extractor = tf.keras.Model(inputs=cnn_model.input, outputs=cnn_model.layers[-2].output)
+        transformer_extractor = tf.keras.Model(inputs=transformer_model.input, outputs=transformer_model.layers[-2].output)
+        
+        gnn_model = GraphSAGE(len(feature_columns), 64, 2)
+        try:
+            gnn_model.load_state_dict(torch.load("saved_models/gnn.pt", map_location=torch.device('cpu')))
+            gnn_model.eval()
+        except:
+            gnn_model = None
+            
+        MODELS_LOADED = True
+    except Exception as e:
+        print(f"❌ Error loading models: {e}")
+        traceback.print_exc()
+        xgb_model, rf_model, cnn_model, transformer_model, autoencoder_model, xgb_hybrid = None, None, None, None, None, None
+        hybrid_feature_columns = None
+        hospital_encoder, insurance_encoder, diagnosis_encoder = None, None, None
+        proc_freq_map, diag_freq_map, avg_claim_diag_map = {}, {}, {}
 
 @app.route('/')
 def home():
@@ -227,6 +237,7 @@ def download_predictions():
 @app.route('/predict', methods=['POST'])
 def predict():
     try:
+        load_models_lazily()
         if 'user' not in session:
             return redirect(url_for('login'))
 
