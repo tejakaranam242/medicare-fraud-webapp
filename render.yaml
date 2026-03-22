@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: medicare-fraud-app
+    env: docker
+    plan: free # Note: The free plan might not have enough RAM for TensorFlow/PyTorch
+    healthCheckPath: /
+    envVars:
+      - key: FLASK_ENV
+        value: production
+      # You will likely need to configure MySQL environment variables as well
+      # as the app currently connects to localhost:3306

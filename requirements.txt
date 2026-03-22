@@ -1,0 +1,14 @@
+Flask
+pandas
+numpy
+scikit-learn
+xgboost
+tensorflow
+tensorflow-addons
+torch
+torch_geometric
+imbalanced-learn
+mysql-connector-python
+shap
+matplotlib
+joblib

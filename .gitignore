@@ -1,0 +1,4 @@
+gh.zip
+bin/
+__pycache__/
+*.log
