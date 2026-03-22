@@ -7,5 +7,6 @@ services:
     envVars:
       - key: FLASK_ENV
         value: production
-      # You will likely need to configure MySQL environment variables as well
+      - key: PORT
+        value: 5000
       # as the app currently connects to localhost:3306

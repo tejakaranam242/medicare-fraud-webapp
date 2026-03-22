@@ -24,4 +24,4 @@ COPY . .
 EXPOSE 5000
 
 # Start server using Gunicorn
-CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "1", "--timeout", "120", "main:app"]
+CMD gunicorn --bind 0.0.0.0:${PORT:-5000} --workers 1 --timeout 120 main:app
