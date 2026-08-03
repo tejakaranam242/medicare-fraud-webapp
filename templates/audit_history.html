@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Audit History | Medicare Audit Intelligence</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --primary:       #2563EB;
+      --primary-light: #EFF6FF;
+      --primary-hover: #1D4ED8;
+      --danger:        #EF4444;
+      --danger-light:  #FEF2F2;
+      --success:       #10B981;
+      --success-light: #ECFDF5;
+      --warning:       #F59E0B;
+      --warning-light: #FFFBEB;
+      --bg:            #F8FAFC;
+      --sidebar-bg:    #FFFFFF;
+      --border:        #E2E8F0;
+      --text:          #0F172A;
+      --muted:         #64748B;
+      --card-shadow:   0 1px 4px rgba(0,0,0,.07);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      margin: 0;
+      display: flex;
+      min-height: 100vh;
+    }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      width: 260px;
+      background: var(--sidebar-bg);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      position: fixed;
+      height: 100vh;
+      z-index: 1000;
+    }
+    .sidebar-header {
+      padding: 1.5rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .sidebar-header i { font-size: 1.5rem; color: var(--primary); }
+    .sidebar-header h5 { margin: 0; font-weight: 700; font-size: 1.1rem; line-height: 1.2; }
+    .sidebar-nav { padding: 1.5rem 1rem; flex: 1; }
+    .nav-link {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: .75rem 1rem;
+      color: #334155;
+      border-radius: 8px;
+      margin-bottom: .5rem;
+      font-weight: 500;
+      transition: all .2s;
+      text-decoration: none;
+    }
+    .nav-link:hover { background: var(--primary-light); color: var(--primary); }
+    .nav-link.active { background: rgba(37,99,235,.1); color: var(--primary); }
+    .nav-link i { font-size: 1.2rem; }
+    .sidebar-footer { padding: 1.5rem; border-top: 1px solid var(--border); }
+    .btn-logout {
+      display: flex; align-items: center; gap: 10px;
+      color: var(--danger); text-decoration: none;
+      font-weight: 600; padding: .5rem; border-radius: 8px;
+      transition: background .2s;
+    }
+    .btn-logout:hover { background: var(--danger-light); }
+
+    /* ── Main ── */
+    .main-content { flex: 1; margin-left: 260px; display: flex; flex-direction: column; }
+
+    .topbar {
+      background: #fff;
+      border-bottom: 1px solid var(--border);
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      height: 70px;
+    }
+    .topbar-title { font-weight: 700; font-size: 1.25rem; margin: 0; }
+    .user-profile { display: flex; align-items: center; gap: 12px; }
+    .avatar {
+      width: 36px; height: 36px;
+      background: var(--primary);
+      color: #fff;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size:.9rem;
+    }
+
+    .content-wrapper { padding: 2rem; max-width: 1280px; width: 100%; margin: 0 auto; }
+
+    /* ── KPI Cards ── */
+    .kpi-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 1.25rem; margin-bottom: 2rem; }
+    .kpi-card {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1.5rem;
+      box-shadow: var(--card-shadow);
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      transition: transform .2s, box-shadow .2s;
+    }
+    .kpi-card:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(0,0,0,.08); }
+    .kpi-icon {
+      width: 50px; height: 50px; border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.5rem; flex-shrink: 0;
+    }
+    .kpi-icon.blue   { background: var(--primary-light); color: var(--primary); }
+    .kpi-icon.red    { background: var(--danger-light);  color: var(--danger);  }
+    .kpi-icon.green  { background: var(--success-light); color: var(--success); }
+    .kpi-icon.yellow { background: var(--warning-light); color: var(--warning); }
+    .kpi-label { font-size: .8rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; }
+    .kpi-value { font-size: 2rem; font-weight: 800; line-height: 1; margin-top: .2rem; }
+
+    /* ── Panels ── */
+    .panel {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      box-shadow: var(--card-shadow);
+      margin-bottom: 2rem;
+      overflow: hidden;
+    }
+    .panel-header {
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .panel-header h5 { margin: 0; font-weight: 700; font-size: 1rem; }
+    .panel-header p  { margin: .2rem 0 0; font-size: .85rem; color: var(--muted); }
+    .panel-body { padding: 1.5rem; }
+
+    /* ── Charts row ── */
+    .charts-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2rem; }
+    .chart-container { position: relative; height: 260px; }
+
+    /* ── Model stats table ── */
+    .model-stat-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: .85rem;
+    }
+    .bar-track {
+      flex: 1;
+      height: 8px;
+      background: #F1F5F9;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .bar-fill {
+      height: 100%;
+      border-radius: 4px;
+      background: var(--danger);
+      transition: width .6s ease;
+    }
+
+    /* ── Log Table ── */
+    .controls-row {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1rem;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .search-box {
+      flex: 1;
+      min-width: 220px;
+      position: relative;
+    }
+    .search-box i {
+      position: absolute;
+      left: .9rem;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--muted);
+      font-size: .95rem;
+    }
+    .search-box input {
+      width: 100%;
+      padding: .55rem 1rem .55rem 2.4rem;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--bg);
+      font-size: .9rem;
+      color: var(--text);
+      transition: border .2s, box-shadow .2s;
+    }
+    .search-box input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(37,99,235,.1);
+    }
+    select.filter-select {
+      padding: .55rem .9rem;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--bg);
+      font-size: .9rem;
+      color: var(--text);
+      cursor: pointer;
+    }
+    select.filter-select:focus { outline: none; border-color: var(--primary); }
+
+    table { width: 100%; border-collapse: collapse; }
+    thead th {
+      background: #F8FAFC;
+      padding: .75rem 1rem;
+      font-size: .8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .4px;
+      color: var(--muted);
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+    tbody tr {
+      border-bottom: 1px solid #F1F5F9;
+      transition: background .15s;
+    }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: #FAFBFF; }
+    tbody td {
+      padding: .85rem 1rem;
+      font-size: .9rem;
+      vertical-align: middle;
+    }
+
+    .badge-fraud {
+      background: var(--danger-light);
+      color: var(--danger);
+      font-weight: 700;
+      padding: .3rem .75rem;
+      border-radius: 20px;
+      font-size: .78rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .badge-legit {
+      background: var(--success-light);
+      color: var(--success);
+      font-weight: 700;
+      padding: .3rem .75rem;
+      border-radius: 20px;
+      font-size: .78rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .model-tag {
+      background: var(--primary-light);
+      color: var(--primary);
+      font-size: .78rem;
+      font-weight: 600;
+      padding: .25rem .65rem;
+      border-radius: 6px;
+    }
+    .id-cell { color: var(--muted); font-size: .82rem; font-weight: 600; }
+    .amount-cell { font-weight: 700; color: var(--text); }
+
+    .empty-state {
+      text-align: center;
+      padding: 4rem 2rem;
+      color: var(--muted);
+    }
+    .empty-state i { font-size: 3.5rem; margin-bottom: 1rem; opacity: .4; }
+    .empty-state h5 { font-weight: 700; margin-bottom: .5rem; color: var(--text); }
+
+    .page-count { font-size: .85rem; color: var(--muted); }
+
+    /* ── Responsive ── */
+    @media (max-width: 992px) {
+      .kpi-grid   { grid-template-columns: repeat(2,1fr); }
+      .charts-row { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 768px) {
+      .sidebar    { display: none; }
+      .main-content { margin-left: 0; }
+      .kpi-grid   { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <i class="bi bi-shield-check"></i>
+      <h5>Medicare<br>Audit Intel</h5>
+    </div>
+    <nav class="sidebar-nav">
+      <a href="/dashboard" class="nav-link">
+        <i class="bi bi-file-earmark-medical"></i> New Claim Audit
+      </a>
+      {% if session.get('role') == 'admin' %}
+      <a href="/admin" class="nav-link">
+        <i class="bi bi-graph-up-arrow"></i> Command Center
+      </a>
+      {% endif %}
+      <a href="/audit-history" class="nav-link active">
+        <i class="bi bi-clock-history"></i> Audit History
+      </a>
+      <a href="/dashboard" class="nav-link">
+        <i class="bi bi-gear"></i> Preferences
+      </a>
+    </nav>
+    <div class="sidebar-footer">
+      <a href="/logout" class="btn-logout">
+        <i class="bi bi-box-arrow-left"></i> Sign Out
+      </a>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="main-content">
+    <header class="topbar">
+      <h2 class="topbar-title">Audit History</h2>
+      <div class="user-profile">
+        <span style="font-weight:500;color:var(--muted)">Auditor: {{ username }}</span>
+        <div class="avatar">{{ username[0]|upper }}</div>
+      </div>
+    </header>
+
+    <div class="content-wrapper">
+
+      {% with messages = get_flashed_messages() %}
+      {% if messages %}
+      <div class="alert alert-danger alert-dismissible fade show mb-4" role="alert">
+        {% for m in messages %}{{ m }}{% endfor %}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      </div>
+      {% endif %}
+      {% endwith %}
+
+      <!-- KPI Cards -->
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-icon blue"><i class="bi bi-clipboard2-pulse"></i></div>
+          <div>
+            <div class="kpi-label">Total Audits</div>
+            <div class="kpi-value" style="color:var(--primary)">{{ total }}</div>
+          </div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon red"><i class="bi bi-exclamation-triangle-fill"></i></div>
+          <div>
+            <div class="kpi-label">Fraud Detected</div>
+            <div class="kpi-value" style="color:var(--danger)">{{ frauds }}</div>
+          </div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon green"><i class="bi bi-shield-fill-check"></i></div>
+          <div>
+            <div class="kpi-label">Legitimate</div>
+            <div class="kpi-value" style="color:var(--success)">{{ legit }}</div>
+          </div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon yellow"><i class="bi bi-percent"></i></div>
+          <div>
+            <div class="kpi-label">Fraud Rate</div>
+            <div class="kpi-value" style="color:var(--warning)">{{ fraud_rate }}%</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Charts Row -->
+      {% if total > 0 %}
+      <div class="charts-row">
+        <!-- Donut -->
+        <div class="panel">
+          <div class="panel-header">
+            <div>
+              <h5>Outcome Distribution</h5>
+              <p>Breakdown of your audit verdicts</p>
+            </div>
+          </div>
+          <div class="panel-body">
+            <div class="chart-container">
+              <canvas id="donutChart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bar: per-model -->
+        <div class="panel">
+          <div class="panel-header">
+            <div>
+              <h5>Model-wise Fraud Rate</h5>
+              <p>Fraud detection rate per intelligence layer</p>
+            </div>
+          </div>
+          <div class="panel-body">
+            <div class="chart-container">
+              <canvas id="modelBarChart"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Model breakdown table -->
+      {% if model_stats %}
+      <div class="panel" style="margin-bottom:2rem;">
+        <div class="panel-header">
+          <div>
+            <h5>Intelligence Layer Breakdown</h5>
+            <p>Per-model total audits and fraud detection statistics</p>
+          </div>
+        </div>
+        <div class="panel-body" style="padding-top:.75rem;">
+          <table>
+            <thead>
+              <tr>
+                <th>Model</th>
+                <th>Total</th>
+                <th>Fraud</th>
+                <th>Legit</th>
+                <th style="width:220px">Fraud Rate</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for ms in model_stats %}
+              <tr>
+                <td><span class="model-tag">{{ ms.model }}</span></td>
+                <td><strong>{{ ms.total }}</strong></td>
+                <td style="color:var(--danger);font-weight:700">{{ ms.frauds }}</td>
+                <td style="color:var(--success);font-weight:700">{{ ms.legit }}</td>
+                <td>
+                  <div class="model-stat-bar">
+                    <div class="bar-track">
+                      <div class="bar-fill" style="width:{{ ms.fraud_rate }}%"></div>
+                    </div>
+                    <span style="font-weight:700;color:var(--danger);min-width:42px">{{ ms.fraud_rate }}%</span>
+                  </div>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      {% endif %}
+      {% endif %}
+
+      <!-- Log Table -->
+      <div class="panel">
+        <div class="panel-header">
+          <div>
+            <h5><i class="bi bi-list-check me-2"></i>Full Audit Log</h5>
+            <p>All claims you have submitted for analysis</p>
+          </div>
+          <span class="page-count">{{ total }} record{{ 's' if total != 1 }}</span>
+        </div>
+        <div class="panel-body">
+
+          {% if logs %}
+          <div class="controls-row">
+            <div class="search-box">
+              <i class="bi bi-search"></i>
+              <input type="text" id="searchInput" placeholder="Search by diagnosis, model, hospital…">
+            </div>
+            <select class="filter-select" id="filterVerdict">
+              <option value="">All Verdicts</option>
+              <option value="Fraud">Fraud</option>
+              <option value="Legitimate">Legitimate</option>
+            </select>
+          </div>
+
+          <table id="logTable">
+            <thead>
+              <tr>
+                <th>#ID</th>
+                <th>Model</th>
+                <th>Verdict</th>
+                <th>Claim (₹)</th>
+                <th>Diagnosis</th>
+                <th>Hospital</th>
+                <th>Insurance</th>
+                <th>Days</th>
+                <th>Timestamp</th>
+              </tr>
+            </thead>
+            <tbody id="logBody">
+              {% for log in logs %}
+              <tr data-verdict="{{ log.label }}">
+                <td class="id-cell">#{{ log.id }}</td>
+                <td><span class="model-tag">{{ log.model }}</span></td>
+                <td>
+                  {% if log.prediction == 1 %}
+                  <span class="badge-fraud"><i class="bi bi-exclamation-circle-fill"></i>Fraud</span>
+                  {% else %}
+                  <span class="badge-legit"><i class="bi bi-check-circle-fill"></i>Legitimate</span>
+                  {% endif %}
+                </td>
+                <td class="amount-cell">
+                  {% if log.claim_amount != '—' %}
+                    ₹{{ "{:,.0f}".format(log.claim_amount|float) }}
+                  {% else %}—{% endif %}
+                </td>
+                <td><code style="font-size:.85rem;background:#F1F5F9;padding:.15rem .45rem;border-radius:4px">{{ log.diagnosis }}</code></td>
+                <td>{{ log.hospital }}</td>
+                <td>{{ log.insurance }}</td>
+                <td>{{ log.days }}</td>
+                <td style="color:var(--muted);font-size:.82rem;white-space:nowrap">{{ log.created_at or '—' }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+
+          <div id="noResultsMsg" class="empty-state" style="display:none;">
+            <i class="bi bi-search"></i>
+            <h5>No matching records</h5>
+            <p>Try adjusting your search or filter.</p>
+          </div>
+
+          {% else %}
+          <div class="empty-state">
+            <i class="bi bi-clipboard2-x"></i>
+            <h5>No audits yet</h5>
+            <p>Submit your first claim audit from the <a href="/dashboard" style="color:var(--primary);font-weight:600;">New Claim Audit</a> page.</p>
+          </div>
+          {% endif %}
+
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    /* ── Chart: Donut ── */
+    {% if total > 0 %}
+    new Chart(document.getElementById('donutChart'), {
+      type: 'doughnut',
+      data: {
+        labels: ['Legitimate', 'Fraud'],
+        datasets: [{
+          data: [{{ legit }}, {{ frauds }}],
+          backgroundColor: ['#10B981', '#EF4444'],
+          borderWidth: 3,
+          borderColor: '#fff',
+          hoverOffset: 8
+        }]
+      },
+      options: {
+        cutout: '68%',
+        plugins: {
+          legend: {
+            position: 'bottom',
+            labels: { usePointStyle: true, padding: 20, font: { family: 'Inter', weight: '600' } }
+          },
+          tooltip: {
+            callbacks: {
+              label: ctx => ` ${ctx.label}: ${ctx.parsed} (${Math.round(ctx.parsed / {{ total }} * 100)}%)`
+            }
+          }
+        }
+      }
+    });
+
+    /* ── Chart: Model Bar ── */
+    const modelLabels = [{% for ms in model_stats %}'{{ ms.model }}'{% if not loop.last %},{% endif %}{% endfor %}];
+    const modelRates  = [{% for ms in model_stats %}{{ ms.fraud_rate }}{% if not loop.last %},{% endif %}{% endfor %}];
+    new Chart(document.getElementById('modelBarChart'), {
+      type: 'bar',
+      data: {
+        labels: modelLabels,
+        datasets: [{
+          label: 'Fraud Rate (%)',
+          data: modelRates,
+          backgroundColor: modelRates.map(r => r > 50 ? 'rgba(239,68,68,.75)' : 'rgba(37,99,235,.7)'),
+          borderRadius: 6,
+          borderSkipped: false,
+        }]
+      },
+      options: {
+        plugins: { legend: { display: false } },
+        scales: {
+          y: {
+            beginAtZero: true,
+            max: 100,
+            ticks: { callback: v => v + '%', font: { family: 'Inter' } },
+            grid: { color: '#F1F5F9' }
+          },
+          x: {
+            ticks: { font: { family: 'Inter', size: 11 } },
+            grid: { display: false }
+          }
+        }
+      }
+    });
+    {% endif %}
+
+    /* ── Search & Filter ── */
+    const searchInput    = document.getElementById('searchInput');
+    const filterVerdict  = document.getElementById('filterVerdict');
+    const logTable       = document.getElementById('logTable');
+    const noResultsMsg   = document.getElementById('noResultsMsg');
+
+    function applyFilters() {
+      if (!logTable) return;
+      const q = (searchInput ? searchInput.value.toLowerCase() : '');
+      const v = (filterVerdict ? filterVerdict.value : '');
+      const rows = logTable.querySelectorAll('tbody tr');
+      let visible = 0;
+      rows.forEach(row => {
+        const text    = row.textContent.toLowerCase();
+        const verdict = row.dataset.verdict || '';
+        const matchQ  = !q || text.includes(q);
+        const matchV  = !v || verdict === v;
+        row.style.display = (matchQ && matchV) ? '' : 'none';
+        if (matchQ && matchV) visible++;
+      });
+      if (noResultsMsg) noResultsMsg.style.display = visible === 0 ? 'block' : 'none';
+    }
+
+    if (searchInput)   searchInput.addEventListener('input',  applyFilters);
+    if (filterVerdict) filterVerdict.addEventListener('change', applyFilters);
+  </script>
+</body>
+</html>

@@ -381,43 +381,25 @@
           </button>
         </div>
       </div>
-
-      <!-- Model Performance & Trust Widget (New) -->
-      <div class="row g-4 mb-4">
-        <div class="col-md-3">
-          <div class="summary-card" style="border-bottom: 4px solid var(--primary-color);">
-            <div class="summary-title" style="font-size: 0.8rem; text-transform: uppercase; color: var(--text-muted);">
-              Model Accuracy</div>
-            <div style="font-size: 1.5rem; font-weight: 700; color: var(--text-main);">{{ metrics.accuracy }}%</div>
-            <div style="font-size: 0.75rem; color: var(--success-color); font-weight: 600;"><i
-                class="bi bi-patch-check-fill"></i> Precision Optimized</div>
-          </div>
-        </div>
-        <div class="col-md-3">
-          <div class="summary-card" style="border-bottom: 4px solid var(--success-color);">
-            <div class="summary-title" style="font-size: 0.8rem; text-transform: uppercase; color: var(--text-muted);">
-              Precision Rate</div>
-            <div style="font-size: 1.5rem; font-weight: 700; color: var(--text-main);">{{ metrics.precision }}%</div>
-            <div style="font-size: 0.75rem; color: var(--text-muted);">False Positive Shielding</div>
-          </div>
-        </div>
-        <div class="col-md-3">
-          <div class="summary-card" style="border-bottom: 4px solid var(--warning-color);">
-            <div class="summary-title" style="font-size: 0.8rem; text-transform: uppercase; color: var(--text-muted);">
-              Recall (Catch Rate)</div>
-            <div style="font-size: 1.5rem; font-weight: 700; color: var(--text-main);">{{ metrics.recall }}%</div>
-            <div style="font-size: 0.75rem; color: var(--text-muted);">Fraud Detection Coverage</div>
-          </div>
-        </div>
-        <div class="col-md-3">
-          <div class="summary-card" style="border-bottom: 4px solid var(--primary-color);">
-            <div class="summary-title" style="font-size: 0.8rem; text-transform: uppercase; color: var(--text-muted);">
-              Training Dataset</div>
-            <div style="font-size: 1.5rem; font-weight: 700; color: var(--text-main);">5,000</div>
-            <div style="font-size: 0.75rem; color: var(--text-muted);">Medicare Claim Samples</div>
+      <!-- Auditor Intelligence Note (Enterprise Feature) -->
+      {% if findings and (findings|length > 0) %}
+      <div class="row mb-4">
+        <div class="col-12">
+          <div class="summary-card" style="border-top: 5px solid var(--warning-color); background: #FFFBEB;">
+            <div class="summary-title"
+              style="color: #92400E; display: flex; align-items:center; gap:8px; border-bottom: 1px solid #FEF3C7;">
+              <i class="bi bi-lightbulb-fill"></i> Auditor Intelligence Note
+            </div>
+            <p style="margin-top: 1rem; color: #92400E; font-size: 0.95rem; font-weight: 500; line-height: 1.5;">
+              <i class="bi bi-info-circle-fill me-1"></i>
+              The expert heuristic layer flagged this claim due to <strong>profile inconsistency</strong>.
+              The recorded billing logic or economic ratios deviate significantly from standardized peer benchmarks.
+              Manual verification of the original patient chart is highly recommended.
+            </p>
           </div>
         </div>
       </div>
+      {% endif %}
 
       <!-- Risk Analysis Findings -->
       <div class="row mb-4">

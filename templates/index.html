@@ -273,7 +273,7 @@
         <i class="bi bi-graph-up-arrow"></i> Command Center
       </a>
       {% endif %}
-      <a href="/dashboard" class="nav-link">
+      <a href="/audit-history" class="nav-link">
         <i class="bi bi-clock-history"></i> Audit History
       </a>
       <a href="/dashboard" class="nav-link">
@@ -300,6 +300,19 @@
 
     <!-- Dashboard Content -->
     <div class="content-wrapper">
+
+      {% with messages = get_flashed_messages() %}
+      {% if messages %}
+      <div class="alert alert-danger alert-dismissible fade show mb-4" role="alert">
+        <i class="bi bi-exclamation-octagon-fill me-2"></i>
+        {% for message in messages %}
+        {{ message }}
+        {% endfor %}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+      {% endif %}
+      {% endwith %}
+
 
       <!-- Audit Form Card -->
       <div class="card">
@@ -338,21 +351,22 @@
                   min="0" required>
               </div>
               <div class="col-md-4">
-                <label for="Patient_Gender" class="form-label">Patient Gender (1=M, 0=F)</label>
+                <label for="Patient_Gender" class="form-label">Patient Gender</label>
                 <select class="form-select" id="Patient_Gender" name="Patient_Gender" required>
                   <option value="" disabled selected>Select</option>
-                  <option value="1">Male</option>
-                  <option value="0">Female</option>
+                  <option value="M">Male</option>
+                  <option value="F">Female</option>
                 </select>
               </div>
               <div class="col-md-4">
-                <label for="Insurance_Type" class="form-label">Insurance Type</label>
+                <label for="Insurance_Type" class="form-label">Insurance Scheme</label>
                 <select class="form-select" id="Insurance_Type" name="Insurance_Type" required>
-                  <option value="" disabled selected>Select</option>
-                  <option value="Private">Private</option>
-                  <option value="Self-pay">Self-pay</option>
-                  <option value="Employer">Employer</option>
-                  <option value="Government">Government</option>
+                  <option value="" disabled selected>Select Scheme</option>
+                  <option value="Ayushman_Bharat">Ayushman Bharat (PM-JAY)</option>
+                  <option value="ESI">ESI (Employees' State Insurance)</option>
+                  <option value="CGHS">CGHS (Central Govt Health Scheme)</option>
+                  <option value="Private">Private Insurance</option>
+                  <option value="Self-pay">Self-pay / Out-of-Pocket</option>
                 </select>
               </div>
 
@@ -370,16 +384,33 @@
                 <label for="Hospital_Type" class="form-label">Hospital Type</label>
                 <select class="form-select" id="Hospital_Type" name="Hospital_Type" required>
                   <option value="" disabled selected>Select</option>
-                  <option value="Teaching">Teaching</option>
-                  <option value="General">General</option>
-                  <option value="Specialty">Specialty</option>
-                  <option value="Clinic">Clinic</option>
+                  <option value="Government">Government Hospital (AIIMS / District)</option>
+                  <option value="Private">Private Hospital (Manipal / Fortis)</option>
+                  <option value="Corporate">Corporate Hospital (Max / Apollo / Medanta)</option>
+                  <option value="Nursing_Home">Nursing Home / Clinic</option>
+                  <option value="AYUSH">AYUSH (Ayurveda / Homeopathy)</option>
                 </select>
               </div>
               <div class="col-md-4">
-                <label for="Diagnosis_Code" class="form-label">Diagnosis Code</label>
-                <input type="text" class="form-control" id="Diagnosis_Code" name="Diagnosis_Code" placeholder="e.g. J45"
-                  required>
+                <label for="Diagnosis_Code" class="form-label">Diagnosis Code (ICD-10)</label>
+                <select class="form-select" id="Diagnosis_Code" name="Diagnosis_Code" required>
+                  <option value="" disabled selected>Select ICD-10 Code</option>
+                  <option value="I10">I10 — Hypertension</option>
+                  <option value="E11">E11 — Diabetes Mellitus Type 2</option>
+                  <option value="J45">J45 — Bronchial Asthma</option>
+                  <option value="K21">K21 — GERD / Acid Reflux</option>
+                  <option value="M54">M54 — Back Pain / Dorsalgia</option>
+                  <option value="A90">A90 — Dengue Fever</option>
+                  <option value="K80">K80 — Cholelithiasis (Gallstones)</option>
+                  <option value="N39">N39 — UTI / Urinary Tract Infection</option>
+                  <option value="I21">I21 — Acute Myocardial Infarction (Heart Attack)</option>
+                  <option value="B01">B01 — Chickenpox (Varicella)</option>
+                  <option value="C34">C34 — Lung Cancer</option>
+                  <option value="N18">N18 — Chronic Kidney Disease (CKD)</option>
+                  <option value="S72">S72 — Hip Fracture</option>
+                  <option value="G35">G35 — Multiple Sclerosis</option>
+                  <option value="J18">J18 — Pneumonia</option>
+                </select>
               </div>
 
               <!-- Billing Data -->
@@ -402,18 +433,51 @@
               </div>
               <div class="col-md-3">
                 <label for="Procedure_Code" class="form-label">Primary Procedure Code</label>
-                <input type="number" class="form-control" id="Procedure_Code" name="Procedure_Code"
-                  placeholder="e.g. 99215" min="0" required>
+                <select class="form-select" id="Procedure_Code" name="Procedure_Code" required>
+                  <option value="" disabled selected>Select Procedure</option>
+                  <optgroup label="Consultations">
+                    <option value="99213">99213 — OPD Consultation (Established)</option>
+                    <option value="99214">99214 — OPD Consultation (Complex)</option>
+                    <option value="99215">99215 — OPD Consultation (High Complexity)</option>
+                  </optgroup>
+                  <optgroup label="Cardiac">
+                    <option value="93000">93000 — ECG / EKG</option>
+                    <option value="93306">93306 — Echocardiogram</option>
+                    <option value="92920">92920 — Coronary Angioplasty (PCI)</option>
+                    <option value="93510">93510 — Cardiac Catheterization</option>
+                  </optgroup>
+                  <optgroup label="Imaging">
+                    <option value="71046">71046 — Chest X-Ray</option>
+                    <option value="74177">74177 — CT Abdomen (with contrast)</option>
+                    <option value="72148">72148 — MRI Lumbar Spine</option>
+                    <option value="70553">70553 — MRI Brain</option>
+                  </optgroup>
+                  <optgroup label="Lab Tests">
+                    <option value="82947">82947 — Blood Glucose</option>
+                    <option value="85025">85025 — CBC (Complete Blood Count)</option>
+                    <option value="81001">81001 — Urinalysis</option>
+                    <option value="82565">82565 — Creatinine</option>
+                  </optgroup>
+                  <optgroup label="Procedures / Surgery">
+                    <option value="43239">43239 — Upper GI Endoscopy</option>
+                    <option value="45378">45378 — Colonoscopy</option>
+                    <option value="47562">47562 — Laparoscopic Cholecystectomy</option>
+                    <option value="27130">27130 — Total Hip Replacement</option>
+                    <option value="90935">90935 — Hemodialysis (Session)</option>
+                    <option value="96413">96413 — Chemotherapy Infusion</option>
+                  </optgroup>
+                </select>
               </div>
               <div class="col-md-3">
                 <label for="Number_of_Procedures" class="form-label">Total Procedures</label>
                 <input type="number" class="form-control" id="Number_of_Procedures" name="Number_of_Procedures"
-                  placeholder="e.g. 3" min="0" required>
+                  placeholder="e.g. 3" min="1" max="20" required>
               </div>
               <div class="col-md-3">
-                <label for="Claim_Amount" class="form-label">Claim Value ($)</label>
-                <input type="number" step="0.01" class="form-control" id="Claim_Amount" name="Claim_Amount"
-                  placeholder="e.g. 1500.50" min="0" required>
+                <label for="Claim_Amount" class="form-label">Claim Amount (₹ INR)</label>
+                <input type="number" step="1" class="form-control" id="Claim_Amount" name="Claim_Amount"
+                  placeholder="e.g. 85000" min="100" required>
+                <div class="form-text text-muted">Range: ₹500 (OPD) – ₹8,00,000 (Major Surgery)</div>
               </div>
             </div>
 
@@ -429,7 +493,6 @@
           </form>
         </div>
       </div>
-
     </div>
   </main>
 
